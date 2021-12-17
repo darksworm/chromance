@@ -1,1 +1,2 @@
 firmware/*.bin
+firmware/credentials.h
