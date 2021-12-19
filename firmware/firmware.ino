@@ -5,6 +5,7 @@
 #include <FastLED.h>
 #include <ArduinoOTA.h>
 #include "credentials.h"
+#include "animation.h"
 #include "grid.h"
 
 #ifndef WIFI_SSID
@@ -17,15 +18,13 @@ exit(1);
 exit(1);
 #endif
 
-#define BRIGHTNESS  12
+#define BRIGHTNESS  10
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
-#define UPDATES_PER_SECOND 150
 
 CRGB leds[4][12 * 14];
 
 CRGB getDebugColor(int knot_number) {
-  return CRGB::Blue;
   if (knot_number == 0)
     return CRGB::Red;
 
@@ -59,6 +58,12 @@ void setupLeds() {
   FastLED.show();
 }
 
+int turnOnLed(struct Grid::Connection connection, int index, CRGB color) {
+  const int offset = (connection.direction == Grid::Direction::Incoming ? 13 : 0);
+  const int led_num = connection.strip_num * 14 + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
+  leds[(int)connection.color][led_num] = color;
+}
+
 void setup(void) {
   setCpuFrequencyMhz(240);
   connectWifi();
@@ -68,122 +73,157 @@ void setup(void) {
   delay(1000);
 }
 
-int turnOnLed(struct Grid::Connection connection, int index) {
-  const int offset = (connection.direction == Grid::Direction::Incoming ? 13 : 0);
-  const int led_num = connection.strip_num * 14 + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
-  leds[(int)connection.color][led_num] = getDebugColor((int)connection.color);
-}
+Animation::Animation side{
+  3,
+  0,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::TOP_LEFT,
+    Animation::Move::TOP_LEFT,
+    Animation::Move::UP,
+    Animation::Move::END
+  },
+  NULL
+};
 
-void turnOnNode(struct Grid::Node node) {
-  for (int j = 0; j < 14; j++) {
-    for (int i = 0; i < 6; i++) {
-      auto dir = node.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-    }
+Animation::Animation side2{
+  3,
+  0,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::TOP_RIGHT,
+    Animation::Move::TOP_RIGHT,
+    Animation::Move::UP,
+    Animation::Move::END
+  },
+  NULL
+};
 
-    ArduinoOTA.handle();
+Animation::Animation side3{
+  3, 8,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::BOTTOM_RIGHT,
+    Animation::Move::BOTTOM_RIGHT,
+    Animation::Move::DOWN,
+    Animation::Move::END
+  },
+  NULL
+};
 
-    FastLED.show();
-    FastLED.delay(66);
+Animation::Animation side4{
+  3, 8,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::BOTTOM_LEFT,
+    Animation::Move::BOTTOM_LEFT,
+    Animation::Move::DOWN,
+    Animation::Move::END
+  },
+  NULL
+};
+
+
+Animation::Animation center1 {
+  3,
+  4,
+  CRGB::Red,
+  new Animation::Move[3] {
+    Animation::Move::TOP_RIGHT,
+    Animation::Move::BOTTOM_RIGHT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+Animation::Animation center2 {
+  3,
+  4,
+  CRGB::Red,
+  new Animation::Move[3] {
+    Animation::Move::TOP_LEFT,
+    Animation::Move::BOTTOM_LEFT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+Animation::Animation center3 {
+  3,
+  4,
+  CRGB::Red,
+  new Animation::Move[3] {
+    Animation::Move::BOTTOM_LEFT,
+    Animation::Move::TOP_LEFT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+Animation::Animation center4 {
+  3,
+  4,
+  CRGB::Red,
+  new Animation::Move[3] {
+    Animation::Move::BOTTOM_RIGHT,
+    Animation::Move::TOP_RIGHT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+Animation::Animation m1 {
+  3, 6,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
+    Animation::Move::SKIP,
+    Animation::Move::TOP_LEFT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+Animation::Animation m2 {
+  3, 6,
+  CRGB::Blue,
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
+    Animation::Move::SKIP,
+    Animation::Move::TOP_RIGHT,
+    Animation::Move::END
+  },
+  NULL
+};
+
+int c = 0;
+void loop(void) {
+  ArduinoOTA.handle();
+
+  Animation::step(&side);
+  Animation::step(&side2);
+  Animation::step(&side3);
+  Animation::step(&side4);
+  if ( !c || !(center1.progress->move_index == 0 && center1.progress->led_index == 0) ) {
+    Animation::step(&center1);
+    Animation::step(&center2);
+    Animation::step(&center3);
+    Animation::step(&center4);
   }
-}
-
-void loop(void) {  
-  auto branch1 = Grid::levels[5].nodes[4];
-  auto branch2 = Grid::levels[5].nodes[2];
-  auto branch3 = Grid::levels[3].nodes[4];
-  auto branch4 = Grid::levels[3].nodes[2];
-  auto branch5 = Grid::levels[2].nodes[3];
-  auto branch6 = Grid::levels[6].nodes[3];
-  
-  auto center_node = Grid::levels[4].nodes[3];
-  turnOnNode(Grid::levels[4].nodes[3]);
-
-  FastLED.delay(45);
-  
-  for (int j = 0; j < 14; j++) {
-    for (int i = 0; i < 6; i++) {
-      auto dir = branch1.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-      dir = branch2.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-      dir = branch3.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-      dir = branch4.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-      dir = branch5.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-      dir = branch6.connections[i];
-      if (dir.direction != Grid::Direction::NotConnected) {
-        turnOnLed(dir, j);
-      }
-    }
-
-    ArduinoOTA.handle();
-
-    FastLED.show();
-    FastLED.delay(66);
+  if (!c || !(m1.progress->move_index == 0 && m1.progress->led_index == 0) ) {
+    Animation::step(&m1);
+    Animation::step(&m2);
   }
-
-//  branch1 = Grid::levels[4].nodes[1];
-//  branch2 = Grid::levels[4].nodes[5];
-//   for (int j = 0; j < 14; j++) {
-//    for (int i = 0; i < 6; i++) {
-//      auto dir = branch1.connections[i];
-//      if (dir.direction != Grid::Direction::NotConnected) {
-//        turnOnLed(dir, j);
-//      }
-//      dir = branch2.connections[i];
-//      if (dir.direction != Grid::Direction::NotConnected) {
-//        turnOnLed(dir, j);
-//      }
-//    }
-//
-//    ArduinoOTA.handle();
-//
-//    FastLED.show();
-//    FastLED.delay(100);
-//  }
-
-  FastLED.delay(300);
-
-  FastLED.clear();
+  c = 1;
+  FastLED.delay(55);
   FastLED.show();
 
-//  for ( int z = 0; z < 25; z++) {
-//    FastLED.clear();
-//    FastLED.show();
-//    FastLED.delay(150);
-//
-//    for (int j = 0; j < 14; j++) {
-//      for (int i = 0; i < 6; i++) {
-//        auto dir = Grid::nodes[z][i];
-//
-//        if (dir.direction != Grid::Direction::NotConnected) {
-//          turnOnLed(dir, j);
-//        }
-//      }
-//
-//      ArduinoOTA.handle();
-//
-//      FastLED.show();
-//      FastLED.delay(100);
-//    }
-//
-//    ArduinoOTA.handle();
-//  }
+  if (side.progress->move_index == 0 && side.progress->led_index == 0) {
+    FastLED.delay(5000);
+    FastLED.clear();
+    FastLED.show();
+    c = 0;
+  }
 }
 
 void showDebugColors(void) {
