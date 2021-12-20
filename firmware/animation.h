@@ -1,7 +1,9 @@
+#pragma once
 #include <FastLED.h>
 #include "grid.h"
 
 extern int turnOnLed(struct Grid::Connection connection, int index, CRGB color);
+extern int fadeLed(struct Grid::Connection connection, int index, int amount);
 
 namespace Animation {
 enum class Move {
@@ -39,6 +41,7 @@ void advanceToNextLED(struct Animation *animation);
 void advanceToNextMove(struct Animation *animation);
 Move& getMove(struct Animation *animation);
 void movePositionToNextNode(struct Animation *animation);
+void adjustPosition(int* y, int* x, Move m);
 
 void step(struct Animation *animation) {
   initiate(animation);
@@ -50,6 +53,33 @@ void initiate(struct Animation *animation) {
     animation->progress = new Progress;
     reset(animation);
   }
+}
+
+Move invertMove(enum class Move m) {
+   int index = (int)m;
+   int opposite_index = (index + 3) % 6;
+   return (Move)opposite_index;
+}
+
+void fadeStep(struct Animation *animation) {
+  int x = animation->progress->x;
+  int y = animation->progress->y;
+
+  int move_index = animation->progress->move_index;
+  int led_index = animation->progress->led_index - 1;
+
+  for (; move_index >= 0; --move_index) {
+    for (; led_index >= 0; --led_index) {
+       auto node = Grid::levels[y].nodes[x];
+       auto strip = node.connections[(int)animation->moves[move_index]];
+       fadeLed(strip, led_index, 30);
+    }
+    if (animation->moves[move_index - 1] != Move::SKIP) {
+      auto m = invertMove(animation->moves[move_index - 1]);
+      adjustPosition(&y, &x, m);
+    }
+    led_index = 13;
+  }  
 }
 
 void move(struct Animation *animation) {
@@ -94,22 +124,26 @@ void advanceToNextMove(struct Animation *animation) {
 
 void movePositionToNextNode(struct Animation *animation) {
   auto current_move = getMove(animation);
-  if (current_move == Move::UP) {
-    animation->progress->y += 2;
-  } else if (current_move == Move::DOWN) {
-    animation->progress->y -= 2;
-  } else if (current_move == Move::TOP_LEFT) {
-    animation->progress->y += 1;
-    animation->progress->x -= 1;
-  } else if (current_move == Move::TOP_RIGHT) {
-    animation->progress->y += 1;
-    animation->progress->x += 1;
-  } else if (current_move == Move::BOTTOM_LEFT) {
-    animation->progress->y -= 1;
-    animation->progress->x -= 1;
-  } else if (current_move == Move::BOTTOM_RIGHT) {
-    animation->progress->y -= 1;
-    animation->progress->x += 1;
+  adjustPosition(&animation->progress->y, &animation->progress->x, current_move);
+}
+
+void adjustPosition(int* y, int* x, Move m) {
+   if (m == Move::UP) {
+    (*y) += 2;
+  } else if (m == Move::DOWN) {
+    (*y) -= 2;
+  } else if (m == Move::TOP_LEFT) {
+    (*y) += 1;
+    (*x) -= 1;
+  } else if (m == Move::TOP_RIGHT) {
+    (*y) += 1;
+    (*x) += 1;
+  } else if (m == Move::BOTTOM_LEFT) {
+    (*y) -= 1;
+    (*x) -= 1;
+  } else if (m == Move::BOTTOM_RIGHT) {
+    (*y) -= 1;
+    (*x) += 1;
   }
 }
 
