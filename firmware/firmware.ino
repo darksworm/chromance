@@ -19,7 +19,7 @@ exit(1);
 exit(1);
 #endif
 
-#define BRIGHTNESS  10
+#define BRIGHTNESS  125
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 
@@ -258,6 +258,7 @@ void loop(void) {
     Animation::step(&m2);
   }
   c = 1;
+
   FastLED.delay(55);
   FastLED.show();
 
