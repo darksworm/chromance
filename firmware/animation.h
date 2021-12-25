@@ -1,5 +1,4 @@
 #pragma once
-#include <FastLED.h>
 #include "grid.h"
 #include "colors.h"
 #include "leds.h"

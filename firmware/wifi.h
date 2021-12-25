@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <ESPmDNS.h>
-#include <FastLED.h>
 #include "credentials.h"
 #include "animations/wifi_loading.h"
 
@@ -23,7 +22,7 @@ namespace Wifi {
 
         while (WiFi.waitForConnectResult() != WL_CONNECTED) {
             WifiLoading::step();
-            FastLED.delay(16);
+            LEDs::delay(16);
         }
     }
 }

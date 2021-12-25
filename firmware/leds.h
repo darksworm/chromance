@@ -7,6 +7,14 @@
 namespace LEDs {
 CRGB leds[4][MAX_LEDS_IN_KNOT];
 
+void delay(int ms) {
+    FastLED.delay(ms);
+}
+
+void show() {
+    FastLED.show();
+}
+
 void clear() {
     for (int k = 0; k < 4; k++) {
         for (int i = 0; i < Grid::knots[k].led_count; i++) {
@@ -23,8 +31,8 @@ void setup(int brightness) {
     FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds[3], Grid::knots[3].led_count).setCorrection(TypicalLEDStrip);
 
     FastLED.setBrightness(brightness);
-    FastLED.clear();
-    FastLED.show();
+    clear();
+    show();
 }
 
 int getPosition(struct Grid::Connection connection, int index) {

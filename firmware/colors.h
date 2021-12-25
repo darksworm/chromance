@@ -1,5 +1,5 @@
 #pragma once
-#include <FastLED.h>
+#include "leds.h"
 
 namespace Colors {
     CRGB multiply(CRGB c, double multiplier) {

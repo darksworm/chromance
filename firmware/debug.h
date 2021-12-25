@@ -1,5 +1,5 @@
 #pragma once
-#include <FastLED.h>
+#include "leds.h"
 #include "grid.h"
 
 extern CRGB leds[4][MAX_LEDS_IN_KNOT];

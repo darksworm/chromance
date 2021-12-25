@@ -21,6 +21,7 @@ void setup(void) {
 
 void loop(void) {
     ArduinoOTA.handle();
-    DebugAnimation::step();
-    FastLED.delay(33);
+    //DebugAnimation::step();
+    OddFace::step();
+    LEDs::delay(33);
 }
