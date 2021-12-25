@@ -65,11 +65,7 @@ Move invertMove(enum Move m) {
 }
 
 void move(struct Animation *animation) {
-  if (getMove(animation) == Move::END) {
-    reset(animation);
-  } else {
-    makeMove(animation);
-  }
+  makeMove(animation);
 }
 
 void reset(struct Animation *animation) {
@@ -82,17 +78,16 @@ void reset(struct Animation *animation) {
 
 void makeMove(struct Animation *animation) {
   doThing(animation);
-  advanceToNextLED(animation);
 }
 
 void doThing(struct Animation *animation) {
-  auto target_color = 100;
-  auto interval = 10;
+  auto target_color = 200;
+  auto interval = 5;
   int hsc = ceil((double)target_color / interval);
   int fsc = hsc * 2;
 
   CRGB current_color;
-  auto current_step = animation->progress->step;
+  int current_step = animation->progress->step++;
 
   int move_index = animation->progress->move_index;
   int led_index = animation->progress->led_index;
@@ -100,20 +95,28 @@ void doThing(struct Animation *animation) {
   int x = animation->progress->x;
   int y = animation->progress->y;
 
+  auto next_move = animation->moves[move_index + 1];
+  if(next_move == Move::END && led_index == 13) {
+      if (current_step >= fsc + (move_index * 14 + led_index)) {
+          reset(animation);
+          return;
+      }
+  } else {
+    advanceToNextLED(animation);
+  }
+
   for (; move_index >= 0; --move_index) {
     for (; led_index >= 0; --led_index) {
        auto relative_step = current_step - (move_index * 14 + led_index) + 1;
-       if(relative_step > fsc) {
-           return;
-       }
-
        auto node = Grid::levels[y].nodes[x];
        auto strip = node.connections[(int)animation->moves[move_index]];
        auto led_descending = relative_step > hsc;
 
-       if (led_descending) {
-         current_color = CRGB(target_color - ((relative_step - hsc) * interval), 0, 0);
-         //current_color = CRGB(0, 0, 255);
+       if(relative_step > fsc) {
+           current_color = CRGB(0,0,0);
+       } else if (led_descending) {
+         int nc = target_color - ((relative_step - hsc) * interval);
+         current_color = CRGB(nc > 0 ? nc : 0, 0, 0);
        } else {
          current_color = CRGB(relative_step * interval, 0 ,0);
        }
@@ -131,7 +134,6 @@ void doThing(struct Animation *animation) {
 }
 
 void advanceToNextLED(struct Animation *animation) {
-  ++animation->progress->step;
   if (++animation->progress->led_index == 14) {
     advanceToNextMove(animation);
   }

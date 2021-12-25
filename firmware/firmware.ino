@@ -115,11 +115,10 @@ Animation::Animation side{
   3,
   0,
   CRGB::Red,
-  new Animation::Move[5] {
+  new Animation::Move[4] {
     Animation::Move::TOP_LEFT,
     Animation::Move::TOP_LEFT,
     Animation::Move::UP,
-    Animation::Move::SKIP,
     Animation::Move::END
   },
   NULL
@@ -129,11 +128,10 @@ Animation::Animation side2{
   3,
   0,
   CRGB::Red,
-  new Animation::Move[5] {
+  new Animation::Move[4] {
     Animation::Move::TOP_RIGHT,
     Animation::Move::TOP_RIGHT,
     Animation::Move::UP,
-    Animation::Move::SKIP,
     Animation::Move::END
   },
   NULL
@@ -142,11 +140,10 @@ Animation::Animation side2{
 Animation::Animation side3{
   3, 8,
   CRGB::Red,
-  new Animation::Move[5] {
+  new Animation::Move[4] {
     Animation::Move::BOTTOM_RIGHT,
     Animation::Move::BOTTOM_RIGHT,
     Animation::Move::DOWN,
-    Animation::Move::SKIP,
     Animation::Move::END
   },
   NULL
@@ -155,11 +152,10 @@ Animation::Animation side3{
 Animation::Animation side4{
   3, 8,
   CRGB::Red,
-  new Animation::Move[5] {
+  new Animation::Move[4] {
     Animation::Move::BOTTOM_LEFT,
     Animation::Move::BOTTOM_LEFT,
     Animation::Move::DOWN,
-    Animation::Move::SKIP,
     Animation::Move::END
   },
   NULL
@@ -216,8 +212,7 @@ Animation::Animation center4 {
 Animation::Animation m1 {
   3, 6,
   CRGB::Red,
-  new Animation::Move[3] {
-    Animation::Move::SKIP,
+  new Animation::Move[2] {
     Animation::Move::TOP_LEFT,
     Animation::Move::END
   },
@@ -227,8 +222,7 @@ Animation::Animation m1 {
 Animation::Animation m2 {
   3, 6,
   CRGB::Red,
-  new Animation::Move[3] {
-    Animation::Move::SKIP,
+  new Animation::Move[2] {
     Animation::Move::TOP_RIGHT,
     Animation::Move::END
   },
@@ -238,29 +232,19 @@ Animation::Animation m2 {
 int c = 0;
 void loop(void) {
   ArduinoOTA.handle();
-
   Animation::step(&side);
   Animation::step(&side2);
   Animation::step(&side3);
   Animation::step(&side4);
 
+  Animation::step(&center1);
+  Animation::step(&center2);
+  Animation::step(&center3);
+  Animation::step(&center4);
 
-//  if ( !c || !(center1.progress->move_index == 0 && center1.progress->led_index == 0) ) {
-//    Animation::step(&center1);
-//    Animation::step(&center2);
-//    Animation::step(&center3);
-//    Animation::step(&center4);
-//  }
-//
-//
-//  if (!c || !(m1.progress->move_index == 0 && m1.progress->led_index == 0) ) {
-//    Animation::step(&m1);
-//    Animation::step(&m2);
-//  }
+  Animation::step(&m1);
+  Animation::step(&m2);
 
-  c = 1;
-
-  FastLED.show();
   FastLED.delay(33);
 }
 
