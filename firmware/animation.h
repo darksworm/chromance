@@ -81,7 +81,7 @@ namespace Animation {
     }
 
     void doThing(struct Animation *animation) {
-        auto target_color = 200;
+        auto target_color = 255;
         auto interval = 5;
         int hsc = ceil((double)target_color / interval);
         int fsc = hsc * 2;

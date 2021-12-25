@@ -47,11 +47,28 @@ CRGB getDebugColor(int knot_number) {
     return CRGB::Blue;
 }
 
+Animation::Animation wifiLoading{
+        3,
+        4,
+        CRGB::Green,
+        new Animation::Move[7] {
+            Animation::Move::TOP_LEFT,
+            Animation::Move::UP,
+            Animation::Move::TOP_RIGHT,
+            Animation::Move::BOTTOM_RIGHT,
+            Animation::Move::DOWN,
+            Animation::Move::BOTTOM_LEFT,
+            Animation::Move::END
+        },
+        NULL
+};
+
 void connectWifi() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        delay(250);
+        Animation::step(&wifiLoading);
+        FastLED.delay(16);
     }
 }
 
@@ -103,16 +120,16 @@ void transitionLed(struct Grid::Connection connection, int index, CRGB targetCol
 }
 
 void setup(void) {
+    delay(200);
     setCpuFrequencyMhz(240);
+    setupLeds();
     connectWifi();
     ArduinoOTA.begin();
-    delay(250); // power-up safety delay
-    setupLeds();
-    delay(1000);
+    clearLeds();
 }
 
 Animation::Animation side{
-    3,
+        3,
         0,
         CRGB::Red,
         new Animation::Move[4] {
