@@ -165,7 +165,8 @@ Animation::Animation center1 {
   3,
   4,
   CRGB::Red,
-  new Animation::Move[3] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
     Animation::Move::TOP_RIGHT,
     Animation::Move::BOTTOM_RIGHT,
     Animation::Move::END
@@ -177,7 +178,8 @@ Animation::Animation center2 {
   3,
   4,
   CRGB::Red,
-  new Animation::Move[3] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
     Animation::Move::TOP_LEFT,
     Animation::Move::BOTTOM_LEFT,
     Animation::Move::END
@@ -189,7 +191,8 @@ Animation::Animation center3 {
   3,
   4,
   CRGB::Red,
-  new Animation::Move[3] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
     Animation::Move::BOTTOM_LEFT,
     Animation::Move::TOP_LEFT,
     Animation::Move::END
@@ -201,7 +204,8 @@ Animation::Animation center4 {
   3,
   4,
   CRGB::Red,
-  new Animation::Move[3] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
     Animation::Move::BOTTOM_RIGHT,
     Animation::Move::TOP_RIGHT,
     Animation::Move::END
@@ -212,7 +216,9 @@ Animation::Animation center4 {
 Animation::Animation m1 {
   3, 6,
   CRGB::Red,
-  new Animation::Move[2] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
+    Animation::Move::SKIP,
     Animation::Move::TOP_LEFT,
     Animation::Move::END
   },
@@ -222,7 +228,9 @@ Animation::Animation m1 {
 Animation::Animation m2 {
   3, 6,
   CRGB::Red,
-  new Animation::Move[2] {
+  new Animation::Move[4] {
+    Animation::Move::SKIP,
+    Animation::Move::SKIP,
     Animation::Move::TOP_RIGHT,
     Animation::Move::END
   },
@@ -232,6 +240,7 @@ Animation::Animation m2 {
 int c = 0;
 void loop(void) {
   ArduinoOTA.handle();
+
   Animation::step(&side);
   Animation::step(&side2);
   Animation::step(&side3);

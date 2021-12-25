@@ -112,8 +112,12 @@ void doThing(struct Animation *animation) {
        auto strip = node.connections[(int)animation->moves[move_index]];
        auto led_descending = relative_step > hsc;
 
+       if (animation->moves[move_index] == Move::SKIP) {
+           continue;
+       }
+
        if(relative_step > fsc) {
-           current_color = CRGB(0,0,0);
+         current_color = CRGB(0,0,0);
        } else if (led_descending) {
          int nc = target_color - ((relative_step - hsc) * interval);
          current_color = CRGB(nc > 0 ? nc : 0, 0, 0);
