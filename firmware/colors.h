@@ -14,6 +14,14 @@ namespace Colors {
         return a <= b ? a : b;
     }
 
+    CRGB multiply(CRGB c, double multiplier) {
+        return CRGB(
+                floor(c.r * multiplier),
+                floor(c.g * multiplier),
+                floor(c.b * multiplier)
+        );
+    }
+
     CRGB stepColor(CRGB current, CRGB target, int amount) {
         CRGB step;
 

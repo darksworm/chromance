@@ -1,6 +1,7 @@
 #pragma once
 #include <FastLED.h>
 #include "grid.h"
+#include "colors.h"
 
 extern int turnOnLed(struct Grid::Connection connection, int index, CRGB color);
 void transitionLed(struct Grid::Connection connection, int index, CRGB targetColor, int amount);
@@ -80,10 +81,15 @@ namespace Animation {
         doThing(animation);
     }
 
+    byte getTopColor(CRGB color) {
+        auto max = color.r > color.g ? color.r : color.g;
+        return max > color.b ? max : color.b;
+    }
+
     void doThing(struct Animation *animation) {
-        auto target_color = 255;
+        auto maxBaseColor = getTopColor(animation->color);
         auto interval = 5;
-        int hsc = ceil((double)target_color / interval);
+        int hsc = ceil((double)maxBaseColor / interval);
         int fsc = hsc * 2;
 
         CRGB current_color;
@@ -117,12 +123,14 @@ namespace Animation {
                 }
 
                 if(relative_step > fsc) {
-                    current_color = CRGB(0,0,0);
+                    current_color = CRGB(0, 0, 0);
                 } else if (led_descending) {
-                    int nc = target_color - ((relative_step - hsc) * interval);
-                    current_color = CRGB(nc > 0 ? nc : 0, 0, 0);
+                    int nc = maxBaseColor - ((relative_step - hsc) * interval);
+                    nc = nc > 0 ? nc : 0;
+                    current_color = Colors::multiply(animation->color, (double)nc / maxBaseColor);
                 } else {
-                    current_color = CRGB(relative_step * interval, 0 ,0);
+                    int nc = relative_step * interval;
+                    current_color = Colors::multiply(animation->color, (double)nc / maxBaseColor);
                 }
 
                 turnOnLed(strip, led_index, current_color);
