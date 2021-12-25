@@ -5,6 +5,7 @@
 #define SECOND_KNOT_LEDS  11 * LEDS_IN_STRIP
 #define THIRD_KNOT_LEDS   12 * LEDS_IN_STRIP
 #define FOURTH_KNOT_LEDS  11 * LEDS_IN_STRIP
+#define MAX_LEDS_IN_KNOT  12 * LEDS_IN_STRIP
 #define TOTAL_LEDS FIRST_KNOT_LEDS + SECOND_KNOT_LEDS + THIRD_KNOT_LEDS + FOURTH_KNOT_LEDS
 
 namespace Grid {
@@ -39,6 +40,14 @@ namespace Grid {
         { KnotColor::Blue,  FOURTH_KNOT_LEDS }
     };
 
+    struct Node {
+        Connection connections[6];
+    };
+
+    struct Level {
+        Node nodes[7];
+    };
+
     auto R = KnotColor::Red;
     auto B = KnotColor::Blue;
     auto W = KnotColor::White;
@@ -48,14 +57,6 @@ namespace Grid {
     auto OUT = Direction::Outgoing;
 
     auto NC = Connection{{}, 0, Direction::NotConnected};
-
-    struct Node {
-        Connection connections[6];
-    };
-
-    struct Level {
-        Node nodes[7];
-    };
 
     auto NULL_NODE = Node{ NC, NC, NC, NC, NC, NC };
 

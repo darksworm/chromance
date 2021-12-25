@@ -88,7 +88,7 @@ namespace Animation {
 
     void doThing(struct Animation *animation) {
         auto maxBaseColor = getTopColor(animation->color);
-        auto interval = 5;
+        auto interval = 2;
         int hsc = ceil((double)maxBaseColor / interval);
         int fsc = hsc * 2;
 
@@ -103,7 +103,7 @@ namespace Animation {
 
         auto next_move = animation->moves[move_index + 1];
         if(next_move == Move::END && led_index == 13) {
-            if (current_step >= fsc + (move_index * 14 + led_index)) {
+            if (current_step == fsc + (move_index * 14 + led_index)) {
                 reset(animation);
                 return;
             }
