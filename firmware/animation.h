@@ -22,7 +22,7 @@ struct Progress {
   int y = 0;
   int led_index = 0;
   int move_index = 0;
-  bool finished = 0;
+  int step = 0;
 };
 
 struct Animation {
@@ -43,6 +43,8 @@ void advanceToNextMove(struct Animation *animation);
 Move& getMove(struct Animation *animation);
 void movePositionToNextNode(struct Animation *animation);
 void adjustPosition(int* y, int* x, Move m);
+void adjustPreviousLEDs(struct Animation *animation);
+void doThing(struct Animation *animation);
 
 void step(struct Animation *animation) {
   initiate(animation);
@@ -62,27 +64,6 @@ Move invertMove(enum Move m) {
    return (Move)opposite_index;
 }
 
-void fadeStep(struct Animation *animation) {
-  int x = animation->progress->x;
-  int y = animation->progress->y;
-
-  int move_index = animation->progress->move_index;
-  int led_index = animation->progress->led_index - 1;
-
-  for (; move_index >= 0; --move_index) {
-    for (; led_index >= 0; --led_index) {
-       auto node = Grid::levels[y].nodes[x];
-       auto strip = node.connections[(int)animation->moves[move_index]];
-       transitionLed(strip, led_index, CRGB::Black, 50);
-    }
-    if (animation->moves[move_index - 1] != Move::SKIP) {
-      auto m = invertMove(animation->moves[move_index - 1]);
-      adjustPosition(&y, &x, m);
-    }
-    led_index = 13;
-  }  
-}
-
 void move(struct Animation *animation) {
   if (getMove(animation) == Move::END) {
     reset(animation);
@@ -94,24 +75,63 @@ void move(struct Animation *animation) {
 void reset(struct Animation *animation) {
   animation->progress->move_index = 0;
   animation->progress->led_index = 0;
+  animation->progress->step = 0;
   animation->progress->x = animation->start_x;
   animation->progress->y = animation->start_y;
 }
 
 void makeMove(struct Animation *animation) {
-  turnOnCurrentLED(animation);
+  doThing(animation);
   advanceToNextLED(animation);
 }
 
-void turnOnCurrentLED(struct Animation *animation) {
-  if (getMove(animation) != Move::SKIP) {
-    auto node = Grid::levels[animation->progress->y].nodes[animation->progress->x];
-    auto strip = node.connections[(int)getMove(animation)];
-    transitionLed(strip, animation->progress->led_index, animation->color, 50);
+void doThing(struct Animation *animation) {
+  auto target_color = 100;
+  auto interval = 10;
+  int hsc = ceil((double)target_color / interval);
+  int fsc = hsc * 2;
+
+  CRGB current_color;
+  auto current_step = animation->progress->step;
+
+  int move_index = animation->progress->move_index;
+  int led_index = animation->progress->led_index;
+
+  int x = animation->progress->x;
+  int y = animation->progress->y;
+
+  for (; move_index >= 0; --move_index) {
+    for (; led_index >= 0; --led_index) {
+       auto relative_step = current_step - (move_index * 14 + led_index) + 1;
+       if(relative_step > fsc) {
+           return;
+       }
+
+       auto node = Grid::levels[y].nodes[x];
+       auto strip = node.connections[(int)animation->moves[move_index]];
+       auto led_descending = relative_step > hsc;
+
+       if (led_descending) {
+         current_color = CRGB(target_color - ((relative_step - hsc) * interval), 0, 0);
+         //current_color = CRGB(0, 0, 255);
+       } else {
+         current_color = CRGB(relative_step * interval, 0 ,0);
+       }
+
+       turnOnLed(strip, led_index, current_color);
+    }
+
+    if (move_index > 0 && animation->moves[move_index - 1] != Move::SKIP) {
+      auto m = invertMove(animation->moves[move_index - 1]);
+      adjustPosition(&y, &x, m);
+    }
+
+    led_index = 13;
   }
 }
 
 void advanceToNextLED(struct Animation *animation) {
+  ++animation->progress->step;
   if (++animation->progress->led_index == 14) {
     advanceToNextMove(animation);
   }

@@ -20,7 +20,7 @@ exit(1);
 exit(1);
 #endif
 
-#define BRIGHTNESS  10
+#define BRIGHTNESS  100
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 
@@ -79,10 +79,6 @@ int turnOnLed(struct Grid::Connection connection, int index, CRGB color) {
   leds[(int)connection.color][led_num] = color;
 }
 
-bool colorsMatch(CRGB a, CRGB b) {
-  return a.r == b.r && a.g == b.g && a.b == b.b;
-}
-
 void clearLeds() {
   for (int k = 0; k < 4; k++) {
     for (int i = 0; i < Grid::knots[k].led_count; i++) {
@@ -90,67 +86,6 @@ void clearLeds() {
     }
   }
   FastLED.clear();
-}
-
-void transitionLeds() {
-  for (int k = 0; k < 4; k++) {
-    for (int i = 0; i < Grid::knots[k].led_count; i++) {
-      auto target = &(ledTargets[k][i]);
-
-      if (target->step == 0) {
-        continue;
-      }
-
-      auto color = leds[k][i];
-      auto new_color = stepColor(color, target->color, target->step);
-
-      leds[k][i] = new_color;
-
-      if (colorsMatch(new_color, CRGB::Red)) {
-        target->step = 0;
-      }
-    }
-  }
-}
-
-
-byte reduce(byte a, byte b) {
-  return (a - b > 0) ? a - b : 0;
-}
-
-byte add(byte a, byte b) {
-  return a + b < b || a + b < a ? 255 : a + b;
-}
-
-int minimum(int a, int b) {
-  return a <= b ? a : b;
-}
-
-CRGB stepColor(CRGB current, CRGB target, int amount) {
-  CRGB step;
-
-  if (current.r > target.r) {
-    step.r = reduce(current.r, minimum(current.r - target.r, amount));
-  }
-  if (current.r < target.r) {
-    step.r = add(current.r, minimum(target.r - current.r, amount));
-  }
-
-  if (current.g > target.g) {
-    step.g = reduce(current.g, minimum(current.g - target.g, amount));
-  }
-  if (current.g < target.g) {
-    step.g = add(current.g, minimum(target.g - current.g, amount));
-  }
-
-  if (current.b > target.b) {
-    step.b = reduce(current.b, minimum(current.b - target.b, amount));
-  }
-  if (current.b < target.b) {
-    step.b = add(current.b, minimum(target.b - current.b, amount));
-  }
-
-  return step;
 }
 
 int getLedPosition(struct Grid::Connection connection, int index) {
@@ -309,53 +244,24 @@ void loop(void) {
   Animation::step(&side3);
   Animation::step(&side4);
 
-  Animation::fadeStep(&side);
-  Animation::fadeStep(&side2);
-  Animation::fadeStep(&side3);
-  Animation::fadeStep(&side4);
 
-  if ( !c || !(center1.progress->move_index == 0 && center1.progress->led_index == 0) ) {
-    Animation::step(&center1);
-    Animation::step(&center2);
-    Animation::step(&center3);
-    Animation::step(&center4);
-  }
-
-  Animation::fadeStep(&center1);
-  Animation::fadeStep(&center2);
-  Animation::fadeStep(&center3);
-  Animation::fadeStep(&center4);
-
-  if (!c || !(m1.progress->move_index == 0 && m1.progress->led_index == 0) ) {
-    Animation::step(&m1);
-    Animation::step(&m2);
-  }
+//  if ( !c || !(center1.progress->move_index == 0 && center1.progress->led_index == 0) ) {
+//    Animation::step(&center1);
+//    Animation::step(&center2);
+//    Animation::step(&center3);
+//    Animation::step(&center4);
+//  }
+//
+//
+//  if (!c || !(m1.progress->move_index == 0 && m1.progress->led_index == 0) ) {
+//    Animation::step(&m1);
+//    Animation::step(&m2);
+//  }
 
   c = 1;
 
-  transitionLeds();
   FastLED.show();
   FastLED.delay(33);
-
-  if (side.progress->move_index == 0 && side.progress->led_index == 0) {
-    transitionLeds();
-    FastLED.show();
-    FastLED.delay(33);
-    transitionLeds();
-    FastLED.show();
-    FastLED.delay(33);
-    transitionLeds();
-    FastLED.show();
-    FastLED.delay(33);
-    transitionLeds();
-    FastLED.show();
-    FastLED.delay(33);
-    c = 0;
-    FastLED.delay(1000);
-    clearLeds();
-
-    FastLED.show();
-  }
 }
 
 void showDebugColors(void) {
