@@ -2,9 +2,7 @@
 #include <FastLED.h>
 #include "grid.h"
 #include "colors.h"
-
-extern int turnOnLed(struct Grid::Connection connection, int index, CRGB color);
-void transitionLed(struct Grid::Connection connection, int index, CRGB targetColor, int amount);
+#include "leds.h"
 
 namespace Animation {
     enum class Move {
@@ -133,7 +131,7 @@ namespace Animation {
                     current_color = Colors::multiply(animation->color, (double)nc / maxBaseColor);
                 }
 
-                turnOnLed(strip, led_index, current_color);
+                LEDs::turnOn(strip, led_index, current_color);
             }
 
             if (move_index > 0 && animation->moves[move_index - 1] != Move::SKIP) {
