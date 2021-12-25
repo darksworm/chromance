@@ -1,3 +1,1 @@
-firmware/*.bin
 firmware/credentials.h
-firmware/build/
