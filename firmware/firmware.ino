@@ -2,6 +2,7 @@
 #include <WiFiClient.h>
 #include <ESPmDNS.h>
 #include <Update.h>
+#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 #include <ArduinoOTA.h>
 #include "credentials.h"
@@ -19,11 +20,19 @@ exit(1);
 exit(1);
 #endif
 
-#define BRIGHTNESS  125
+#define BRIGHTNESS  10
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 
-CRGB leds[4][12 * 14];
+#define MAX_LEDS_IN_STRIP 12 * LEDS_IN_STRIP
+
+struct LedTransition {
+  CRGB color = CRGB::Black;
+  byte step = 0;
+};
+
+CRGB leds[4][MAX_LEDS_IN_STRIP];
+LedTransition ledTargets[4][MAX_LEDS_IN_STRIP];
 
 CRGB getDebugColor(int knot_number) {
   if (knot_number == 0)
@@ -41,7 +50,6 @@ CRGB getDebugColor(int knot_number) {
 void connectWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     delay(250);
   }
@@ -57,37 +65,106 @@ void setupLeds() {
 
   FastLED.clear();
   FastLED.show();
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = 0; i < Grid::knots[k].led_count; i++) {
+      ledTargets[k][i] = {};
+    }
+  }
 }
 
 int turnOnLed(struct Grid::Connection connection, int index, CRGB color) {
   const int offset = (connection.direction == Grid::Direction::Incoming ? 13 : 0);
-  const int led_num = connection.strip_num * 14 + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
+  const int led_num = connection.strip_num * LEDS_IN_STRIP + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
   leds[(int)connection.color][led_num] = color;
 }
 
-void fadeLeds(int amount) {
-  for (int i = 0; i < Grid::knots[2].led_count; i++) {
-    for (int k = 0; k < 4; k++) {
-      if (i < Grid::knots[k].led_count) {
-        auto color = leds[k][i];
-        if (color.r+color.g+color.b > 0) {
-          leds[k][i] = CRGB(cappedReduction(color.r, amount), cappedReduction(color.g, amount), cappedReduction(color.b, amount));
-        }
+bool colorsMatch(CRGB a, CRGB b) {
+  return a.r == b.r && a.g == b.g && a.b == b.b;
+}
+
+void clearLeds() {
+  for (int k = 0; k < 4; k++) {
+    for (int i = 0; i < Grid::knots[k].led_count; i++) {
+      leds[k][i] = CRGB::Black;
+    }
+  }
+  FastLED.clear();
+}
+
+void transitionLeds() {
+  for (int k = 0; k < 4; k++) {
+    for (int i = 0; i < Grid::knots[k].led_count; i++) {
+      auto target = &(ledTargets[k][i]);
+
+      if (target->step == 0) {
+        continue;
       }
-    }    
+
+      auto color = leds[k][i];
+      auto new_color = stepColor(color, target->color, target->step);
+
+      leds[k][i] = new_color;
+
+      if (colorsMatch(new_color, CRGB::Red)) {
+        target->step = 0;
+      }
+    }
   }
 }
 
 
-int cappedReduction(int a, int b) {
-  return (a - b > 0) ? (a - b) : 0;
+byte reduce(byte a, byte b) {
+  return (a - b > 0) ? a - b : 0;
 }
 
-int fadeLed(struct Grid::Connection connection, int index, int amount) {
+byte add(byte a, byte b) {
+  return a + b < b || a + b < a ? 255 : a + b;
+}
+
+int minimum(int a, int b) {
+  return a <= b ? a : b;
+}
+
+CRGB stepColor(CRGB current, CRGB target, int amount) {
+  CRGB step;
+
+  if (current.r > target.r) {
+    step.r = reduce(current.r, minimum(current.r - target.r, amount));
+  }
+  if (current.r < target.r) {
+    step.r = add(current.r, minimum(target.r - current.r, amount));
+  }
+
+  if (current.g > target.g) {
+    step.g = reduce(current.g, minimum(current.g - target.g, amount));
+  }
+  if (current.g < target.g) {
+    step.g = add(current.g, minimum(target.g - current.g, amount));
+  }
+
+  if (current.b > target.b) {
+    step.b = reduce(current.b, minimum(current.b - target.b, amount));
+  }
+  if (current.b < target.b) {
+    step.b = add(current.b, minimum(target.b - current.b, amount));
+  }
+
+  return step;
+}
+
+int getLedPosition(struct Grid::Connection connection, int index) {
   const int offset = (connection.direction == Grid::Direction::Incoming ? 13 : 0);
-  const int led_num = connection.strip_num * 14 + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
-  auto color = leds[(int)connection.color][led_num];
-  leds[(int)connection.color][led_num] = CRGB(cappedReduction(color.r, amount), cappedReduction(color.g, amount), cappedReduction(color.b, amount));
+  return connection.strip_num * LEDS_IN_STRIP + (index * (connection.direction == Grid::Direction::Incoming ? -1 : 1)) + offset;
+}
+
+void transitionLed(struct Grid::Connection connection, int index, CRGB targetColor, int step) {
+  const int led_num = getLedPosition(connection, index);
+  const auto target = &(ledTargets[(int)connection.color][led_num]);
+  if (target->step == 0) {
+    target->color = targetColor;
+    target->step = step;
+  }
 }
 
 void setup(void) {
@@ -102,7 +179,7 @@ void setup(void) {
 Animation::Animation side{
   3,
   0,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[5] {
     Animation::Move::TOP_LEFT,
     Animation::Move::TOP_LEFT,
@@ -116,7 +193,7 @@ Animation::Animation side{
 Animation::Animation side2{
   3,
   0,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[5] {
     Animation::Move::TOP_RIGHT,
     Animation::Move::TOP_RIGHT,
@@ -129,7 +206,7 @@ Animation::Animation side2{
 
 Animation::Animation side3{
   3, 8,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[5] {
     Animation::Move::BOTTOM_RIGHT,
     Animation::Move::BOTTOM_RIGHT,
@@ -142,7 +219,7 @@ Animation::Animation side3{
 
 Animation::Animation side4{
   3, 8,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[5] {
     Animation::Move::BOTTOM_LEFT,
     Animation::Move::BOTTOM_LEFT,
@@ -152,7 +229,6 @@ Animation::Animation side4{
   },
   NULL
 };
-
 
 Animation::Animation center1 {
   3,
@@ -204,7 +280,7 @@ Animation::Animation center4 {
 
 Animation::Animation m1 {
   3, 6,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[3] {
     Animation::Move::SKIP,
     Animation::Move::TOP_LEFT,
@@ -215,7 +291,7 @@ Animation::Animation m1 {
 
 Animation::Animation m2 {
   3, 6,
-  CRGB(0,0,255),
+  CRGB::Red,
   new Animation::Move[3] {
     Animation::Move::SKIP,
     Animation::Move::TOP_RIGHT,
@@ -228,9 +304,6 @@ int c = 0;
 void loop(void) {
   ArduinoOTA.handle();
 
-//  fadeLeds(10);
-    FastLED.show();
-
   Animation::step(&side);
   Animation::step(&side2);
   Animation::step(&side3);
@@ -240,30 +313,48 @@ void loop(void) {
   Animation::fadeStep(&side2);
   Animation::fadeStep(&side3);
   Animation::fadeStep(&side4);
-  
+
   if ( !c || !(center1.progress->move_index == 0 && center1.progress->led_index == 0) ) {
     Animation::step(&center1);
     Animation::step(&center2);
     Animation::step(&center3);
     Animation::step(&center4);
   }
-  
+
   Animation::fadeStep(&center1);
   Animation::fadeStep(&center2);
   Animation::fadeStep(&center3);
   Animation::fadeStep(&center4);
-  
+
   if (!c || !(m1.progress->move_index == 0 && m1.progress->led_index == 0) ) {
     Animation::step(&m1);
     Animation::step(&m2);
   }
+
   c = 1;
 
-  FastLED.delay(55);
+  transitionLeds();
   FastLED.show();
+  FastLED.delay(33);
 
   if (side.progress->move_index == 0 && side.progress->led_index == 0) {
+    transitionLeds();
+    FastLED.show();
+    FastLED.delay(33);
+    transitionLeds();
+    FastLED.show();
+    FastLED.delay(33);
+    transitionLeds();
+    FastLED.show();
+    FastLED.delay(33);
+    transitionLeds();
+    FastLED.show();
+    FastLED.delay(33);
     c = 0;
+    FastLED.delay(1000);
+    clearLeds();
+
+    FastLED.show();
   }
 }
 

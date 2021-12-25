@@ -1,5 +1,12 @@
 #pragma once
 
+#define LEDS_IN_STRIP 14
+#define FIRST_KNOT_LEDS    6 * LEDS_IN_STRIP
+#define SECOND_KNOT_LEDS  11 * LEDS_IN_STRIP
+#define THIRD_KNOT_LEDS   12 * LEDS_IN_STRIP
+#define FOURTH_KNOT_LEDS  11 * LEDS_IN_STRIP
+#define TOTAL_LEDS FIRST_KNOT_LEDS + SECOND_KNOT_LEDS + THIRD_KNOT_LEDS + FOURTH_KNOT_LEDS
+
 namespace Grid {
 enum class KnotColor {
   Red = 0,
@@ -26,10 +33,10 @@ struct Connection {
 };
 
 const Knot knots[4] = {
-  { KnotColor::Red,    6 * 14 },
-  { KnotColor::White, 11 * 14 },
-  { KnotColor::Green, 12 * 14 },
-  { KnotColor::Blue,  11 * 14 }
+  { KnotColor::Red,   FIRST_KNOT_LEDS },
+  { KnotColor::White, SECOND_KNOT_LEDS },
+  { KnotColor::Green, THIRD_KNOT_LEDS },
+  { KnotColor::Blue,  FOURTH_KNOT_LEDS }
 };
 
 auto R = KnotColor::Red;

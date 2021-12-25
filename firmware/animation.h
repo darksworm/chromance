@@ -3,7 +3,7 @@
 #include "grid.h"
 
 extern int turnOnLed(struct Grid::Connection connection, int index, CRGB color);
-extern int fadeLed(struct Grid::Connection connection, int index, int amount);
+void transitionLed(struct Grid::Connection connection, int index, CRGB targetColor, int amount);
 
 namespace Animation {
 enum class Move {
@@ -22,6 +22,7 @@ struct Progress {
   int y = 0;
   int led_index = 0;
   int move_index = 0;
+  bool finished = 0;
 };
 
 struct Animation {
@@ -55,7 +56,7 @@ void initiate(struct Animation *animation) {
   }
 }
 
-Move invertMove(enum class Move m) {
+Move invertMove(enum Move m) {
    int index = (int)m;
    int opposite_index = (index + 3) % 6;
    return (Move)opposite_index;
@@ -72,7 +73,7 @@ void fadeStep(struct Animation *animation) {
     for (; led_index >= 0; --led_index) {
        auto node = Grid::levels[y].nodes[x];
        auto strip = node.connections[(int)animation->moves[move_index]];
-       fadeLed(strip, led_index, 30);
+       transitionLed(strip, led_index, CRGB::Black, 50);
     }
     if (animation->moves[move_index - 1] != Move::SKIP) {
       auto m = invertMove(animation->moves[move_index - 1]);
@@ -106,7 +107,7 @@ void turnOnCurrentLED(struct Animation *animation) {
   if (getMove(animation) != Move::SKIP) {
     auto node = Grid::levels[animation->progress->y].nodes[animation->progress->x];
     auto strip = node.connections[(int)getMove(animation)];
-    turnOnLed(strip, animation->progress->led_index, animation->color);
+    transitionLed(strip, animation->progress->led_index, animation->color, 50);
   }
 }
 
