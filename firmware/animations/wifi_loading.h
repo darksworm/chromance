@@ -15,10 +15,13 @@ namespace WifiLoading {
             Animation::Move::BOTTOM_LEFT,
             Animation::Move::END
         },
-        NULL
+    };
+
+    Animation::AnimationExecution exec {
+        new Animation::Progress(), &Animation::fadeInFadeOutStep
     };
 
     void step() {
-        Animation::step(&wifiLoading);
+        Animation::step(&wifiLoading, &exec);
     }
 }

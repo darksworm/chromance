@@ -1,6 +1,9 @@
 #pragma once
+#define FASTLED_INTERRUPT_RETRY_COUNT 0
+#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 #include "grid.h"
+#include "colors.h"
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 
@@ -24,13 +27,33 @@ void clear() {
     FastLED.clear();
 }
 
+void darkenLeds(int percentage) {
+    for (int k = 0; k < 4; k++) {
+        for (int i = 0; i < Grid::knots[k].led_count; i++) {
+            leds[k][i] = Colors::multiply(leds[k][i], ((double) 100 - percentage) / 100);
+        }
+    }
+}
+
+void brightenLeds(int percentage) {
+    for (int k = 0; k < 4; k++) {
+        for (int i = 0; i < Grid::knots[k].led_count; i++) {
+            leds[k][i] = Colors::multiply(leds[k][i], ((double) 100 + percentage) / 100);
+        }
+    }
+}
+
+void setBrightness(int brightness) {
+    FastLED.setBrightness(brightness);
+}
+
 void setup(int brightness) {
     FastLED.addLeds<LED_TYPE, 32, COLOR_ORDER>(leds[0], Grid::knots[0].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 33, COLOR_ORDER>(leds[1], Grid::knots[1].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds[2], Grid::knots[2].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds[3], Grid::knots[3].led_count).setCorrection(TypicalLEDStrip);
 
-    FastLED.setBrightness(brightness);
+    setBrightness(brightness);
     clear();
     show();
 }

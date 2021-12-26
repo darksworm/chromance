@@ -16,6 +16,7 @@ namespace Animation {
     };
 
     struct Progress {
+        int initiated = 0;
         int x = 0;
         int y = 0;
         int led_index = 0;
@@ -28,31 +29,33 @@ namespace Animation {
         const int start_y;
         CRGB color;
         Move *moves;
-        Progress *progress;
     };
 
-    void initiate(struct Animation *animation);
-    void move(struct Animation *animation);
-    void reset(struct Animation *animation);
-    void makeMove(struct Animation *animation);
+    struct AnimationExecution {
+        Progress* progress;
+        void (*step)(Animation*, Progress*);
+    };
+
+    void initiate(struct Animation *animation, struct Progress *progress);
+    void reset(struct Animation *animation, struct Progress *progress);
+    void makeMove(struct Animation *animation, struct Progress *progress);
     void turnOnCurrentLED(struct Animation *animation);
-    void advanceToNextLED(struct Animation *animation);
-    void advanceToNextMove(struct Animation *animation);
-    Move& getMove(struct Animation *animation);
-    void movePositionToNextNode(struct Animation *animation);
+    void advanceToNextLED(struct Animation *animation, struct Progress *progress);
+    void advanceToNextMove(struct Animation *animation, struct Progress *progress);
+    Move& getMove(struct Animation *animation, struct Progress *progress);
+    void movePositionToNextNode(struct Animation *animation, struct Progress *progress);
     void adjustPosition(int* y, int* x, Move m);
     void adjustPreviousLEDs(struct Animation *animation);
     void doThing(struct Animation *animation);
 
-    void step(struct Animation *animation) {
-        initiate(animation);
-        move(animation);
+    void step(struct Animation *animation, struct AnimationExecution* exec) {
+        initiate(animation, exec->progress);
+        exec->step(animation, exec->progress);
     }
 
-    void initiate(struct Animation *animation) {
-        if (animation->progress == NULL) {
-            animation->progress = new Progress;
-            reset(animation);
+    void initiate(struct Animation *animation, struct Progress *progress) {
+        if (progress->initiated == 0) {
+            reset(animation, progress);
         }
     }
 
@@ -62,50 +65,38 @@ namespace Animation {
         return (Move)opposite_index;
     }
 
-    void move(struct Animation *animation) {
-        makeMove(animation);
+    void reset(struct Animation *animation, struct Progress *progress) {
+        progress->initiated = 1;
+        progress->move_index = 0;
+        progress->led_index = 0;
+        progress->step = 0;
+        progress->x = animation->start_x;
+        progress->y = animation->start_y;
     }
 
-    void reset(struct Animation *animation) {
-        animation->progress->move_index = 0;
-        animation->progress->led_index = 0;
-        animation->progress->step = 0;
-        animation->progress->x = animation->start_x;
-        animation->progress->y = animation->start_y;
-    }
-
-    void makeMove(struct Animation *animation) {
-        doThing(animation);
-    }
-
-    byte getTopColor(CRGB color) {
-        auto max = color.r > color.g ? color.r : color.g;
-        return max > color.b ? max : color.b;
-    }
-
-    void doThing(struct Animation *animation) {
-        auto maxBaseColor = getTopColor(animation->color);
-        auto interval = 2;
+    void fadeInFadeOutStep(struct Animation *animation, struct Progress *progress) {
+        auto maxBaseColor = Colors::getTopColor(animation->color);
+        auto interval = 1;
         int hsc = ceil((double)maxBaseColor / interval);
         int fsc = hsc * 2;
 
         CRGB current_color;
-        int current_step = animation->progress->step++;
+        int current_step = progress->step++;
 
-        int move_index = animation->progress->move_index;
-        int led_index = animation->progress->led_index;
+        int move_index = progress->move_index;
+        int led_index = progress->led_index;
 
-        int x = animation->progress->x;
-        int y = animation->progress->y;
+        int x = progress->x;
+        int y = progress->y;
 
         auto next_move = animation->moves[move_index + 1];
         if(next_move == Move::END && led_index == 13) {
             if (current_step == fsc + (move_index * 14 + led_index)) {
-                reset(animation);
+                reset(animation, progress);
                 return;
             }
         } else {
-            advanceToNextLED(animation);
+            advanceToNextLED(animation, progress);
         }
 
         for (; move_index >= 0; --move_index) {
@@ -142,21 +133,73 @@ namespace Animation {
         }
     }
 
-    void advanceToNextLED(struct Animation *animation) {
-        if (++animation->progress->led_index == 14) {
-            advanceToNextMove(animation);
+    void fadeInStep(struct Animation *animation, struct Progress *progress) {
+        auto maxBaseColor = Colors::getTopColor(animation->color);
+        auto interval = 1;
+        int fsc = ceil((double)maxBaseColor / interval);
+        CRGB current_color;
+        int current_step = progress->step++;
+
+        int move_index = progress->move_index;
+        int led_index = progress->led_index;
+
+        int x = progress->x;
+        int y = progress->y;
+
+        auto next_move = animation->moves[move_index + 1];
+        if(next_move == Move::END && led_index == 13) {
+            if (current_step == fsc + (move_index * 14 + led_index)) {
+                reset(animation, progress);
+                return;
+            }
+        } else {
+            advanceToNextLED(animation, progress);
+        }
+
+        for (; move_index >= 0; --move_index) {
+            for (; led_index >= 0; --led_index) {
+                auto relative_step = current_step - (move_index * 14 + led_index) + 1;
+                auto node = Grid::levels[y].nodes[x];
+                auto strip = node.connections[(int)animation->moves[move_index]];
+
+                if (animation->moves[move_index] == Move::SKIP) {
+                    continue;
+                }
+
+                if(relative_step > fsc) {
+                    current_color = animation->color;
+                } else {
+                    int nc = relative_step * interval;
+                    current_color = Colors::multiply(animation->color, (double)nc / maxBaseColor);
+                }
+
+                LEDs::turnOn(strip, led_index, current_color);
+            }
+
+            if (move_index > 0 && animation->moves[move_index - 1] != Move::SKIP) {
+                auto m = invertMove(animation->moves[move_index - 1]);
+                adjustPosition(&y, &x, m);
+            }
+
+            led_index = 13;
         }
     }
 
-    void advanceToNextMove(struct Animation *animation) {
-        movePositionToNextNode(animation);
-        animation->progress->led_index = 0;
-        animation->progress->move_index++;
+    void advanceToNextLED(struct Animation *animation, struct Progress *progress) {
+        if (++progress->led_index == 14) {
+            advanceToNextMove(animation, progress);
+        }
     }
 
-    void movePositionToNextNode(struct Animation *animation) {
-        auto current_move = getMove(animation);
-        adjustPosition(&animation->progress->y, &animation->progress->x, current_move);
+    void advanceToNextMove(struct Animation *animation, struct Progress *progress) {
+        movePositionToNextNode(animation, progress);
+        progress->led_index = 0;
+        progress->move_index++;
+    }
+
+    void movePositionToNextNode(struct Animation *animation, struct Progress *progress) {
+        auto current_move = getMove(animation, progress);
+        adjustPosition(&progress->y, &progress->x, current_move);
     }
 
     void adjustPosition(int* y, int* x, Move m) {
@@ -179,7 +222,7 @@ namespace Animation {
         }
     }
 
-    Move& getMove(struct Animation *animation) {
-        return animation->moves[animation->progress->move_index];
+    Move& getMove(struct Animation *animation, struct Progress *progress) {
+        return animation->moves[progress->move_index];
     }
 }

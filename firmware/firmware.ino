@@ -3,7 +3,6 @@
 #include "grid.h"
 #include "debug.h"
 #include "animations/odd_face.h"
-#include "animations/debug.h"
 #include "wifi.h"
 
 #define BRIGHTNESS  100
@@ -21,7 +20,6 @@ void setup(void) {
 
 void loop(void) {
     ArduinoOTA.handle();
-    //DebugAnimation::step();
     OddFace::step();
     LEDs::delay(33);
 }
