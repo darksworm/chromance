@@ -76,7 +76,7 @@ namespace Animation {
 
     void fadeInFadeOutStep(struct Animation *animation, struct Progress *progress) {
         auto maxBaseColor = Colors::getTopColor(animation->color);
-        auto interval = 1;
+        double interval = 0.3;
         int hsc = ceil((double)maxBaseColor / interval);
         int fsc = hsc * 2;
 
@@ -110,7 +110,17 @@ namespace Animation {
                     continue;
                 }
 
-                if(relative_step > fsc) {
+                auto padding = 23;
+
+                // don't start at 1% to avoid mixing in random colors
+                if (interval < padding && relative_step * interval < padding) {
+                    continue;
+                }
+
+                // don't fade out to 0% to avoid mixing in random colors
+                if (interval < padding && relative_step > fsc - padding) {
+                    current_color = CRGB(0, 0, 0);
+                } else if(relative_step > fsc) {
                     current_color = CRGB(0, 0, 0);
                 } else if (led_descending) {
                     int nc = maxBaseColor - ((relative_step - hsc) * interval);
@@ -163,6 +173,13 @@ namespace Animation {
                 auto strip = node.connections[(int)animation->moves[move_index]];
 
                 if (animation->moves[move_index] == Move::SKIP) {
+                    continue;
+                }
+
+                auto padding = 23;
+
+                // don't start at 1% to avoid mixing in random colors
+                if (interval < padding && relative_step * interval < padding) {
                     continue;
                 }
 

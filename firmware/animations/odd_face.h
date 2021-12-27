@@ -2,7 +2,7 @@
 #include "../leds.h"
 
 namespace OddFace {
-    auto animationColor = CRGB::Green;
+    auto animationColor = CRGB::Orange;
 
     Animation::Animation side{
         3,
@@ -139,14 +139,14 @@ namespace OddFace {
     void step() {
         if (counter > 0 && exec[0].progress->move_index == 0 && exec[0].progress->led_index == 0) {
             // do nada
-            //if(brightness_counter++ > 30) {
-            //    LEDs::brightenLeds(1);
+            //if(brightness_counter++ > 50) {
+            //    LEDs::darkenStep(animationColor, brightness_counter - 50 + 1);
 
-            //    if(brightness_counter == 60) {
+            //    if(brightness_counter == 100) {
             //        brightness_counter = 0;
             //    }
             //} else {
-            //    LEDs::darkenLeds(1);
+            //    LEDs::lightenStep(animationColor, brightness_counter + 1);
             //}
         } else {
             counter++;

@@ -35,6 +35,28 @@ void darkenLeds(int percentage) {
     }
 }
 
+void darkenStep(CRGB color, int step) {
+    for (int k = 0; k < 4; k++) {
+        for (int i = 0; i < Grid::knots[k].led_count; i++) {
+            auto led = leds[k][i];
+            if (led.r + led.g + led.b == 0) continue;
+
+            leds[k][i] = Colors::multiply(color, ((double) 100 - step) / 100);
+        }
+    }
+}
+
+void lightenStep(CRGB color, int step) {
+    for (int k = 0; k < 4; k++) {
+        for (int i = 0; i < Grid::knots[k].led_count; i++) {
+            auto led = leds[k][i];
+            if (led.r + led.g + led.b == 0) continue;
+
+            leds[k][i] = Colors::multiply(color, ((double) 100 + step) / 100);
+        }
+    }
+}
+
 void brightenLeds(int percentage) {
     for (int k = 0; k < 4; k++) {
         for (int i = 0; i < Grid::knots[k].led_count; i++) {
