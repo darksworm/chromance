@@ -5,10 +5,15 @@ namespace AnimationSequences {
         protected:
             virtual void makeStep() = 0;
             virtual void initialize() = 0;
+            virtual void doReset() = 0;
         private:
             bool initialized = false;
         public:
-            virtual void reset() = 0;
+            void reset() {
+                if (initialized) {
+                    doReset();
+                }
+            }
             void step() {
                 if (!initialized) {
                     initialize();

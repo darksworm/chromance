@@ -1,17 +1,16 @@
 #include "../animation.h"
-#include "../leds.h"
 #include "sequence.h"
 #include "../animation_manipulators.h"
-
-#define ANIM_PARTS 10
-#define ANIM_COLOR CRGB::Orange
+#include "../telnet.h"
 
 using namespace AnimationManipulators;
 
 namespace AnimationSequences {
+    const int ANIM_PARTS = 10;
+    const CRGB color = CRGB::Orange;
+
     Animation::Animation hex1 {
-        3, 0,
-        ANIM_COLOR,
+        3, 0, color,
         new Animation::Move[4] {
             Animation::Move::TOP_LEFT,
             Animation::Move::TOP_LEFT,
@@ -25,7 +24,7 @@ namespace AnimationSequences {
     Anim hex4 = mirrorAnimation(copyAnim(hex3, 3, 8));
 
     Animation::Animation center1 {
-        3, 4, ANIM_COLOR,
+        3, 4, color,
         new Animation::Move[4] {
             Animation::Move::SKIP,
             Animation::Move::TOP_RIGHT,
@@ -39,7 +38,7 @@ namespace AnimationSequences {
     Anim center4 = mirrorAnimation(copyAnim(center3));
 
     Animation::Animation m1 {
-        3, 6, ANIM_COLOR,
+        3, 6, color,
         new Animation::Move[4] {
             Animation::Move::SKIP,
             Animation::Move::SKIP,
@@ -57,34 +56,32 @@ namespace AnimationSequences {
             center1, center2, center3, center4,
             m1, m2
         };
-        Animation::AnimationExecution exec[ANIM_PARTS];
-        int brightness_counter = 0;
+        Animation::AnimationExecution execs[ANIM_PARTS];
         int counter = 0;
 
         protected:
         void initialize() override {
             for (auto i = 0; i < ANIM_PARTS; i++) {
-                exec[i] = { new Animation::Progress, &Animation::fadeInStep };
+                execs[i] = { new Animation::Progress, &Animation::fadeInStep };
             }
         }
 
-        void makeStep () override {
-            if (counter++ > 0 && exec[0].progress->move_index == 0 && exec[0].progress->led_index == 0) {
+        void makeStep() override {
+            if (counter > 0 && execs[0].progress->move_index == 0 && execs[0].progress->led_index == 0) {
                 // do nada
             } else {
+                counter++;
                 for (int i = 0; i < ANIM_PARTS; i++) {
-                    Animation::step(&animations[i], &exec[i]);
+                    Animation::step(&animations[i], &execs[i]);
                 }
             }
         }
 
-        public:
-        void reset () override {
+        void doReset() override {
             counter = 0;
-            brightness_counter = 0;
-            for(int i = 0; i < ANIM_PARTS; i ++) {
-                delete exec[i].progress;
-                exec[i].progress = new Animation::Progress;
+            for (auto i = 0; i < ANIM_PARTS; i++) {
+                delete execs[i].progress;
+                execs[i].progress = new Animation::Progress;
             }
         }
     };

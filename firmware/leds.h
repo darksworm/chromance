@@ -25,6 +25,7 @@ void clear() {
         }
     }
     FastLED.clear();
+    show();
 }
 
 void darkenLeds(int percentage) {

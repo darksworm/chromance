@@ -16,7 +16,7 @@ void onConnect(String ip) {
     Serial.print(ip);
     Serial.println(" connected");
     telnet.println("\nWelcome " + telnet.getIP());
-    telnet.println("(Use ^] + q  to disconnect.)");
+    telnet.println("(Use CTRL + ] and q  to disconnect.)");
 }
 
 void onDisconnect(String ip) {

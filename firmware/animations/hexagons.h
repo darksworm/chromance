@@ -5,15 +5,16 @@
 
 using namespace AnimationManipulators;
 
-#define ACCENT_DELAY 5
-#define ANIM_COUNT 8
 // COOL MR GREEN - LISTERINE COLOR SCHEME
-#define DOMINANT_COLOR CRGB(0, 184, 60)
-#define ACCENT_COLOR CRGB(6, 135, 81)
 
 namespace AnimationSequences {
+    const int ACCENT_DELAY = 5;
+    const int HEX_ANIM_PARTS = 8;
+    const CRGB DOMINANT_COLOR = CRGB(0, 184, 60);
+    const CRGB ACCENT_COLOR = CRGB(6, 135, 81);
+
     Anim hexagon {
-        3, 0, CRGB::Red,
+        3, 0, CRGB::Black,
         new Move[7] {
             Move::TOP_RIGHT,
             Move::UP,
@@ -27,7 +28,7 @@ namespace AnimationSequences {
 
     class Hexagons : public Sequence {
         private:
-            Anim anims[8] {
+            Anim animations[8] {
                 copyAnim(hexagon, 5, 4, DOMINANT_COLOR),
                 copyAnim(hexagon, 3, 4, DOMINANT_COLOR),
                 copyAnim(hexagon, 1, 4, DOMINANT_COLOR),
@@ -40,24 +41,23 @@ namespace AnimationSequences {
 
                 delayAnimation(mirrorAnimation(copyAnim(hexagon, 3, 0, ACCENT_COLOR)), ACCENT_DELAY),
             };
-            Animation::AnimationExecution execs[ANIM_COUNT];
+            Animation::AnimationExecution execs[HEX_ANIM_PARTS];
 
         protected:
             void initialize() override {
-                for (auto i = 0; i < ANIM_COUNT; i++) {
+                for (auto i = 0; i < HEX_ANIM_PARTS; i++) {
                     execs[i] = { new Animation::Progress, &Animation::fadeInFadeOutStep };
                 }
             }
 
             void makeStep () override {
-                for (int i = 0; i < ANIM_COUNT; ++i) {
-                    Animation::step(&anims[i], &execs[i]);
+                for (int i = 0; i < HEX_ANIM_PARTS; ++i) {
+                    Animation::step(&animations[i], &execs[i]);
                 }
             }
 
-        public:
-            void reset() {
-                for (int i = 0; i < ANIM_COUNT; ++i) {
+            void doReset() override {
+                for (int i = 0; i < HEX_ANIM_PARTS; ++i) {
                     delete execs[i].progress;
                     execs[i].progress = new Animation::Progress;
                 }
