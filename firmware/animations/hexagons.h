@@ -89,18 +89,9 @@ namespace HexagonsAnimation {
             }
     };
 
-    Anim bigHexagon {
-        3, 0, CRGB::Yellow,
-            new Move[19] {
-                Move::TOP_LEFT,
-
-            }
-    };
-
-
 #define ACCENT_DELAY 5
 #define ANIM_COUNT 8
-// COOL MR GREEN - LISTERINECOLOR SCHEME
+// COOL MR GREEN - LISTERINE COLOR SCHEME
 #define DOMINANT_COLOR CRGB(0, 184, 60)
 #define ACCENT_COLOR CRGB(6, 135, 81)
 
@@ -130,5 +121,13 @@ namespace HexagonsAnimation {
             Animation::step(&anims[i], &execs[i]);
         }
         init = true;
+    }
+
+
+    void reset() {
+        for (int i = 0; i < ANIM_COUNT; ++i) {
+            delete execs[i].progress;
+            execs[i].progress = new Animation::Progress;
+        }
     }
 }

@@ -18,7 +18,7 @@ void shutdown(unsigned int progress, unsigned int total) {
 
 bool oddface = false;
 auto handlers = new Telnet::MessageHandler[1] {
-    { "anim switch", [](){ oddface = !oddface; LEDs::clear(); } }
+    { "anim switch", [](){ OddFace::reset(); HexagonsAnimation::reset(); oddface = !oddface; LEDs::clear(); } }
 };
 
 void setup(void) {

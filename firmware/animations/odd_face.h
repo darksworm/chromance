@@ -166,4 +166,13 @@ namespace OddFace {
         }
 
     }
+
+    void reset() {
+        counter = 0;
+        brightness_counter = 0;
+        for(int i = 0; i < 10; i ++) {
+            delete exec[i].progress;
+            exec[i].progress = new Animation::Progress;
+        }
+    }
 };
