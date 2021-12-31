@@ -1,178 +1,91 @@
 #include "../animation.h"
 #include "../leds.h"
+#include "sequence.h"
+#include "../animation_manipulators.h"
 
-namespace OddFace {
-    auto animationColor = CRGB::Orange;
+#define ANIM_PARTS 10
+#define ANIM_COLOR CRGB::Orange
 
-    Animation::Animation side{
-        3,
-            0,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::TOP_LEFT,
-                Animation::Move::TOP_LEFT,
-                Animation::Move::UP,
-                Animation::Move::END
-            },
+using namespace AnimationManipulators;
+
+namespace AnimationSequences {
+    Animation::Animation hex1 {
+        3, 0,
+        ANIM_COLOR,
+        new Animation::Move[4] {
+            Animation::Move::TOP_LEFT,
+            Animation::Move::TOP_LEFT,
+            Animation::Move::UP,
+            Animation::Move::END
+        },
     };
 
-    Animation::Animation side2{
-        3,
-            0,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::TOP_RIGHT,
-                Animation::Move::TOP_RIGHT,
-                Animation::Move::UP,
-                Animation::Move::END
-            },
-    };
-
-    Animation::Animation side3{
-        3, 8,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::BOTTOM_RIGHT,
-                Animation::Move::BOTTOM_RIGHT,
-                Animation::Move::DOWN,
-                Animation::Move::END
-            },
-    };
-
-    Animation::Animation side4{
-        3, 8,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::BOTTOM_LEFT,
-                Animation::Move::BOTTOM_LEFT,
-                Animation::Move::DOWN,
-                Animation::Move::END
-            },
-    };
+    Anim hex2 = mirrorAnimation(copyAnim(hex1));
+    Anim hex3 = flipAnimation(copyAnim(hex1, 3, 8));
+    Anim hex4 = mirrorAnimation(copyAnim(hex3, 3, 8));
 
     Animation::Animation center1 {
-        3,
-            4,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::TOP_RIGHT,
-                Animation::Move::BOTTOM_RIGHT,
-                Animation::Move::END
-            },
+        3, 4, ANIM_COLOR,
+        new Animation::Move[4] {
+            Animation::Move::SKIP,
+            Animation::Move::TOP_RIGHT,
+            Animation::Move::BOTTOM_RIGHT,
+            Animation::Move::END
+        },
     };
 
-    Animation::Animation center2 {
-        3,
-            4,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::TOP_LEFT,
-                Animation::Move::BOTTOM_LEFT,
-                Animation::Move::END
-            },
-    };
-
-    Animation::Animation center3 {
-        3,
-            4,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::BOTTOM_LEFT,
-                Animation::Move::TOP_LEFT,
-                Animation::Move::END
-            },
-    };
-
-    Animation::Animation center4 {
-        3,
-            4,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::BOTTOM_RIGHT,
-                Animation::Move::TOP_RIGHT,
-                Animation::Move::END
-            },
-    };
+    Anim center2 = mirrorAnimation(copyAnim(center1));
+    Anim center3 = flipAnimation(copyAnim(center2));
+    Anim center4 = mirrorAnimation(copyAnim(center3));
 
     Animation::Animation m1 {
-        3, 6,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::SKIP,
-                Animation::Move::TOP_LEFT,
-                Animation::Move::END
-            },
+        3, 6, ANIM_COLOR,
+        new Animation::Move[4] {
+            Animation::Move::SKIP,
+            Animation::Move::SKIP,
+            Animation::Move::TOP_LEFT,
+            Animation::Move::END
+        },
     };
 
-    Animation::Animation m2 {
-        3, 6,
-            animationColor,
-            new Animation::Move[4] {
-                Animation::Move::SKIP,
-                Animation::Move::SKIP,
-                Animation::Move::TOP_RIGHT,
-                Animation::Move::END
-            },
-    };
+    Anim m2 = mirrorAnimation(copyAnim(m1));
 
-    Animation::AnimationExecution exec[10] = {
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-        {new Animation::Progress, &Animation::fadeInStep},
-    };
+    class OddFace : public Sequence {
+        private:
+        Animation::Animation animations[ANIM_PARTS] {
+            hex1, hex2, hex3, hex4,
+            center1, center2, center3, center4,
+            m1, m2
+        };
+        Animation::AnimationExecution exec[ANIM_PARTS];
+        int brightness_counter = 0;
+        int counter = 0;
 
-    int counter = 0;
-    int brightness_counter = 0;
-    bool lock = false;
-    void step() {
-        if (counter > 0 && exec[0].progress->move_index == 0 && exec[0].progress->led_index == 0) {
-            // do nada
-            //if(brightness_counter++ > 50) {
-            //    LEDs::darkenStep(animationColor, brightness_counter - 50 + 1);
-
-            //    if(brightness_counter == 100) {
-            //        brightness_counter = 0;
-            //    }
-            //} else {
-            //    LEDs::lightenStep(animationColor, brightness_counter + 1);
-            //}
-        } else {
-            counter++;
-
-            Animation::step(&side, &exec[0]);
-            Animation::step(&side2, &exec[1]);
-            Animation::step(&side3, &exec[2]);
-            Animation::step(&side4, &exec[3]);
-
-            Animation::step(&center1, &exec[4]);
-            Animation::step(&center2, &exec[5]);
-            Animation::step(&center3, &exec[6]);
-            Animation::step(&center4, &exec[7]);
-
-            Animation::step(&m1, &exec[8]);
-            Animation::step(&m2, &exec[9]);
+        protected:
+        void initialize() override {
+            for (auto i = 0; i < ANIM_PARTS; i++) {
+                exec[i] = { new Animation::Progress, &Animation::fadeInStep };
+            }
         }
 
-    }
-
-    void reset() {
-        counter = 0;
-        brightness_counter = 0;
-        for(int i = 0; i < 10; i ++) {
-            delete exec[i].progress;
-            exec[i].progress = new Animation::Progress;
+        void makeStep () override {
+            if (counter++ > 0 && exec[0].progress->move_index == 0 && exec[0].progress->led_index == 0) {
+                // do nada
+            } else {
+                for (int i = 0; i < ANIM_PARTS; i++) {
+                    Animation::step(&animations[i], &exec[i]);
+                }
+            }
         }
-    }
+
+        public:
+        void reset () override {
+            counter = 0;
+            brightness_counter = 0;
+            for(int i = 0; i < ANIM_PARTS; i ++) {
+                delete exec[i].progress;
+                exec[i].progress = new Animation::Progress;
+            }
+        }
+    };
 };

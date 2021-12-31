@@ -8,19 +8,22 @@
 #include "wifi.h"
 
 #define BRIGHTNESS 80
-#define DELAY 60
+#define DELAY 55
 
 void shutdown(unsigned int progress, unsigned int total) {
+    Telnet::println("Update in progress " + String((double) progress / total * 100) + "%");
     LEDs::darkenLeds(1);
     LEDs::delay(1);
-    Telnet::println("Update in progress " + String(progress) + "/" + String(total) + " " + String((double) progress / total * 100) + "%");
 }
+
+AnimationSequences::OddFace face;
+AnimationSequences::Hexagons hexagons;
 
 bool stopped = false;
 bool oddface = false;
 auto handlers = new Telnet::MessageHandler[4] {
-    { "anim switch", [](){ oddface = !oddface; OddFace::reset(); HexagonsAnimation::reset(); LEDs::clear(); } },
-    { "anim stop", []() { stopped = true; OddFace::reset(); HexagonsAnimation::reset(); LEDs::clear(); LEDs::show(); } },
+    { "anim switch", [](){ oddface = !oddface; face.reset(); hexagons.reset(); LEDs::clear(); } },
+    { "anim stop", []() { stopped = true; face.reset(); hexagons.reset(); LEDs::clear(); LEDs::show(); } },
     { "anim pause", []() { stopped = true; } },
     { "anim start", []() { stopped = false; } },
 };
@@ -46,9 +49,9 @@ void loop(void) {
 
     if(!stopped) {
         if(oddface) {
-            OddFace::step();
+            face.step();
         } else {
-            HexagonsAnimation::step();
+            hexagons.step();
         }
 
         LEDs::delay(DELAY);
