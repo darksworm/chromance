@@ -1,6 +1,5 @@
 #include "../animation.h"
 #include "../leds.h"
-#include "hsv2rgb.h"
 #include "../animation_manipulators.h"
 #include "sequence.h"
 
@@ -28,7 +27,7 @@ namespace AnimationSequences {
 
     class Hexagons : public Sequence {
         private:
-            Anim anims[ANIM_COUNT] = {
+            Anim anims[8] {
                 copyAnim(hexagon, 5, 4, DOMINANT_COLOR),
                 copyAnim(hexagon, 3, 4, DOMINANT_COLOR),
                 copyAnim(hexagon, 1, 4, DOMINANT_COLOR),
@@ -42,12 +41,11 @@ namespace AnimationSequences {
                 delayAnimation(mirrorAnimation(copyAnim(hexagon, 3, 0, ACCENT_COLOR)), ACCENT_DELAY),
             };
             Animation::AnimationExecution execs[ANIM_COUNT];
-            bool init = false;
 
         protected:
             void initialize() override {
                 for (auto i = 0; i < ANIM_COUNT; i++) {
-                    execs[i] = { new Animation::Progress, &Animation::fadeInStep };
+                    execs[i] = { new Animation::Progress, &Animation::fadeInFadeOutStep };
                 }
             }
 

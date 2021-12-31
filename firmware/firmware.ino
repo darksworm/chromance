@@ -8,12 +8,16 @@
 #include "wifi.h"
 
 #define BRIGHTNESS 80
-#define DELAY 55
+#define DELAY 45
 
 void shutdown(unsigned int progress, unsigned int total) {
+    static bool firstCall = true;
     Telnet::println("Update in progress " + String((double) progress / total * 100) + "%");
-    LEDs::darkenLeds(1);
-    LEDs::delay(1);
+    if (firstCall) {
+        LEDs::clear();
+        LEDs::show();
+        firstCall = false;
+    }
 }
 
 AnimationSequences::OddFace face;
