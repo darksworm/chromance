@@ -70,14 +70,17 @@ void setBrightness(int brightness) {
 }
 
 void setup(int brightness) {
+    clear();
+    setBrightness(0);
+
+    set_max_power_in_milliwatts(28000);
+
     FastLED.addLeds<LED_TYPE, 32, COLOR_ORDER>(leds[0], Grid::knots[0].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 33, COLOR_ORDER>(leds[1], Grid::knots[1].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds[2], Grid::knots[2].led_count).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds[3], Grid::knots[3].led_count).setCorrection(TypicalLEDStrip);
 
     setBrightness(brightness);
-    clear();
-    show();
 }
 
 int getPosition(struct Grid::Connection connection, int index) {
