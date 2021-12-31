@@ -16,9 +16,13 @@ void shutdown(unsigned int progress, unsigned int total) {
     Telnet::println("Update in progress " + String(progress) + "/" + String(total) + " " + String((double) progress / total * 100) + "%");
 }
 
+bool stopped = false;
 bool oddface = false;
-auto handlers = new Telnet::MessageHandler[1] {
-    { "anim switch", [](){ OddFace::reset(); HexagonsAnimation::reset(); oddface = !oddface; LEDs::clear(); } }
+auto handlers = new Telnet::MessageHandler[4] {
+    { "anim switch", [](){ oddface = !oddface; OddFace::reset(); HexagonsAnimation::reset(); LEDs::clear(); } },
+    { "anim stop", []() { stopped = true; OddFace::reset(); HexagonsAnimation::reset(); LEDs::clear(); LEDs::show(); } },
+    { "anim pause", []() { stopped = true; } },
+    { "anim start", []() { stopped = false; } },
 };
 
 void setup(void) {
@@ -39,12 +43,18 @@ void setup(void) {
 void loop(void) {
     ArduinoOTA.handle();
     Telnet::loop();
-    if(oddface) {
-        OddFace::step();
+
+    if(!stopped) {
+        if(oddface) {
+            OddFace::step();
+        } else {
+            HexagonsAnimation::step();
+        }
+
+        LEDs::delay(DELAY);
     } else {
-        HexagonsAnimation::step();
+        delay(20);
     }
-    LEDs::delay(DELAY);
 }
 
 
