@@ -6,8 +6,8 @@
 using namespace AnimationManipulators;
 
 namespace AnimationSequences {
-    const int ANIM_PARTS = 10;
-    const CRGB color = CRGB::Orange;
+    const int ANIM_PARTS = 12;
+    const CRGB color = CRGB::Red;
 
     Animation::Animation hex1 {
         3, 0, color,
@@ -48,13 +48,15 @@ namespace AnimationSequences {
     };
 
     Anim m2 = mirrorAnimation(copyAnim(m1));
+    Anim m3 = flipAnimation(copyAnim(m1, 3, 2));
+    Anim m4 = mirrorAnimation(copyAnim(m3));
 
     class OddFace : public Sequence {
         private:
         Animation::Animation animations[ANIM_PARTS] {
             hex1, hex2, hex3, hex4,
             center1, center2, center3, center4,
-            m1, m2
+            m1, m2, m3, m4
         };
         Animation::AnimationExecution execs[ANIM_PARTS];
         int counter = 0;
@@ -64,6 +66,7 @@ namespace AnimationSequences {
             for (auto i = 0; i < ANIM_PARTS; i++) {
                 execs[i] = { new Animation::Progress, &Animation::fadeInStep };
             }
+            colors[0] = CRGB::Orange;
         }
 
         void makeStep() override {
@@ -72,6 +75,7 @@ namespace AnimationSequences {
             } else {
                 counter++;
                 for (int i = 0; i < ANIM_PARTS; i++) {
+                    animations[i].color = colors[0];
                     Animation::step(&animations[i], &execs[i]);
                 }
             }

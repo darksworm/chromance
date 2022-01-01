@@ -19,6 +19,17 @@ struct State {
     bool stopped = false;
 };
 
+CRGB CRGBFromString(String str) {
+    int firstComma = str.indexOf(',');
+    int lastComma = str.lastIndexOf(',');
+
+    byte red = str.substring(0, firstComma).toInt();
+    byte green = str.substring(firstComma + 1, lastComma).toInt();
+    byte blue = str.substring(lastComma + 1, str.length()).toInt();
+
+    return CRGB(red, green, blue);
+}
+
 void shutdown(unsigned int progress, unsigned int total) {
     static bool firstCall = true;
     Telnet::println("Update in progress " + String((double) progress / total * 100) + "%");
@@ -55,27 +66,40 @@ void nextAnim() {
     }
 }
 
-auto handlers = new Telnet::MessageHandler[10] {
-    { "anim next",      [](){ resetAnims(); nextAnim(); saveState(); LEDs::clear(); } },
-    { "anim stop",      [](){ state.stopped = true; resetAnims(); saveState(); LEDs::clear(); } },
-    { "anim pause",     [](){ state.stopped = true; saveState(); } },
-    { "anim start",     [](){ state.stopped = false; saveState(); } },
+void setColor(int i, CRGB color) {
+    animations[state.animation_index]->setColor(i, color);
+}
 
-    { "brightness inc", [](){ if(state.brightness < 250) state.brightness += 5; saveState(); LEDs::setBrightness(state.brightness); } },
-    { "brightness dec", [](){ if(state.brightness > 5) state.brightness -= 5; saveState(); LEDs::setBrightness(state.brightness); } },
+auto handlers = new Telnet::MessageHandler[14] {
+    { "anim next",      [](String _){ resetAnims(); nextAnim(); saveState(); LEDs::clear(); } },
+    { "anim stop",      [](String _){ state.stopped = true; resetAnims(); saveState(); LEDs::clear(); } },
+    { "anim pause",     [](String _){ state.stopped = true; saveState(); } },
+    { "anim start",     [](String _){ state.stopped = false; saveState(); } },
 
-    { "speed inc",      [](){ if(state.delay_ms > 5) state.delay_ms -= 5; saveState(); } },
-    { "speed dec",      [](){ state.delay_ms += 5; saveState(); } },
+    { "brightness",     [](String _){ Telnet::println("current brightnes: " + String(state.brightness)); } },
+    { "brightness inc", [](String _){ if(state.brightness < 250) state.brightness += 5; saveState(); LEDs::setBrightness(state.brightness); } },
+    { "brightness dec", [](String _){ if(state.brightness > 5) state.brightness -= 5; saveState(); LEDs::setBrightness(state.brightness); } },
 
-    { "reset",          [](){ esp_restart(); } },
+    { "speed",          [](String _){ Telnet::println("delay between frames: " + String(state.delay_ms)); } },
+    { "speed inc",      [](String _){ if(state.delay_ms > 5) state.delay_ms -= 5; saveState(); } },
+    { "speed dec",      [](String _){ state.delay_ms += 5; saveState(); } },
 
-    { "", [](){} }
+    { "color 1 set *",  [](String color){ setColor(0, CRGBFromString(color)); } },
+    { "color 2 set *",  [](String color){ setColor(1, CRGBFromString(color)); } },
+
+    { "reset",          [](String _){ esp_restart(); } },
+
+    { "",               [](String _){} }
 };
 
 void setup(void) {
     EEPROM.begin(128);
     setCpuFrequencyMhz(240);
     delay(200);
+
+    if (EEPROM.read(MAGIC_EEPROM_ADDR) == MAGIC_EEPROM_NUMBER) {
+        EEPROM.get(STATE_ADDR, state);
+    }
 
     LEDs::setup(state.brightness);
     Wifi::connect();
@@ -86,10 +110,6 @@ void setup(void) {
     ArduinoOTA.begin();
 
     LEDs::clear();
-
-    if (EEPROM.read(MAGIC_EEPROM_ADDR) == MAGIC_EEPROM_NUMBER) {
-        EEPROM.get(STATE_ADDR, state);
-    }
 }
 
 void loop(void) {

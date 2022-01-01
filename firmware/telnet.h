@@ -5,7 +5,7 @@ namespace Telnet {
 
 struct MessageHandler {
     String message;
-    void (*handle)();
+    void (*handle)(String payload);
 };
 
 ESPTelnet telnet;
@@ -54,8 +54,13 @@ void setup(MessageHandler* handlers = NULL) {
         if(messageHandlers != NULL) {
             for (auto handler = messageHandlers; handler->message != ""; handler++) {
                 if (message == handler->message) {
-                    handler->handle();
+                    handler->handle("");
                     return;
+                } else if (handler->message.endsWith("*")) {
+                    if (message.startsWith(handler->message.substring(0, handler->message.length() - 2))) {
+                        handler->handle(message.substring(handler->message.length() - 2));
+                        return;
+                    }
                 }
             }
         }

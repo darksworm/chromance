@@ -1,6 +1,7 @@
 #pragma once
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
 #define FASTLED_ALLOW_INTERRUPTS 0
+#define FASTLED_INTERNAL
 #include <FastLED.h>
 #include "grid.h"
 #include "colors.h"
